@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Garmin × Whoop Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0f1117;color:#e2e8f0;min-height:100vh;padding:24px}
+
+    header{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:12px}
+    .header-left{display:flex;align-items:center;gap:12px}
+    .logo{width:40px;height:40px;background:linear-gradient(135deg,#3b82f6,#06b6d4);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.3rem}
+    header h1{font-size:1.4rem;font-weight:700}
+    header .sub{font-size:.85rem;color:#64748b;margin-top:2px}
+
+    .whoop-btn{padding:8px 16px;border-radius:8px;font-size:.85rem;font-weight:600;cursor:pointer;border:none;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+    .whoop-connect{background:#00c4b4;color:#000}
+    .whoop-connected{background:#1e2330;color:#00c4b4;border:1px solid #00c4b4}
+    .whoop-setup{background:#2a3045;color:#94a3b8;cursor:default}
+
+    .section-label{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#64748b;margin-bottom:12px;padding-left:4px}
+
+    /* Comparison grid */
+    .compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:28px}
+    @media(max-width:700px){.compare-grid{grid-template-columns:1fr}}
+
+    .device-col{display:flex;flex-direction:column;gap:14px}
+
+    .device-header{display:flex;align-items:center;gap:10px;padding:14px 16px;border-radius:12px;margin-bottom:4px}
+    .garmin-header{background:linear-gradient(135deg,#1d4ed822,#3b82f622);border:1px solid #3b82f633}
+    .whoop-header{background:linear-gradient(135deg,#00c4b422,#00876022);border:1px solid #00c4b433}
+    .device-logo{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1rem}
+    .garmin-logo{background:#3b82f6}
+    .whoop-logo{background:#00c4b4}
+    .device-name{font-weight:700;font-size:1rem}
+    .device-sub{font-size:.75rem;color:#64748b}
+
+    .stat-card{background:#1e2330;border-radius:12px;padding:16px;border:1px solid #2a3045;display:flex;align-items:center;gap:14px}
+    .stat-card:hover{border-color:#3b82f644}
+    .stat-icon{font-size:1.4rem;width:36px;text-align:center;flex-shrink:0}
+    .stat-value{font-size:1.4rem;font-weight:700;color:#fff}
+    .stat-label{font-size:.72rem;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-top:2px}
+
+    /* Score ring */
+    .score-card{background:#1e2330;border-radius:12px;padding:16px;border:1px solid #2a3045;text-align:center}
+    .score-ring{width:90px;height:90px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 8px;font-size:1.6rem;font-weight:800;border:4px solid}
+    .score-label{font-size:.72rem;color:#64748b;text-transform:uppercase;letter-spacing:.05em}
+
+    /* Charts row */
+    .charts-row{display:grid;grid-template-columns:2fr 1fr 1fr;gap:20px;margin-bottom:28px}
+    @media(max-width:900px){.charts-row{grid-template-columns:1fr}}
+
+    .chart-card{background:#1e2330;border-radius:14px;padding:20px;border:1px solid #2a3045}
+    .chart-card h2{font-size:.8rem;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px}
+    .chart-wrapper{position:relative;height:180px}
+
+    /* Activities */
+    .activities-card{background:#1e2330;border-radius:14px;padding:20px;border:1px solid #2a3045;margin-bottom:28px}
+    .activities-card h2{font-size:.8rem;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px}
+    .act-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid #2a3045}
+    .act-row:last-child{border-bottom:none}
+    .act-icon{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0}
+    .act-name{font-weight:600;font-size:.9rem}
+    .act-meta{font-size:.75rem;color:#64748b;margin-top:2px}
+    .act-right{margin-left:auto;text-align:right}
+    .act-dist{font-weight:700;font-size:.9rem}
+    .act-cal{font-size:.75rem;color:#64748b}
+
+    .source-badge{font-size:.65rem;padding:2px 6px;border-radius:20px;font-weight:700;margin-left:6px;vertical-align:middle}
+    .garmin-badge{background:#3b82f622;color:#60a5fa;border:1px solid #3b82f644}
+    .whoop-badge{background:#00c4b422;color:#00c4b4;border:1px solid #00c4b444}
+    .today-badge{background:#1d4ed8;color:#bfdbfe;font-size:.65rem;padding:2px 6px;border-radius:20px;font-weight:700;margin-left:4px;vertical-align:middle}
+
+    .placeholder{display:flex;align-items:center;justify-content:center;height:80px;color:#475569;font-size:.85rem;border:1px dashed #2a3045;border-radius:10px}
+    .loader{text-align:center;padding:40px;color:#64748b;font-size:.85rem}
+
+    .delta{font-size:.75rem;margin-top:2px}
+    .delta-up{color:#22c55e}
+    .delta-down{color:#ef4444}
+    .delta-neutral{color:#64748b}
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <div class="logo">📊</div>
+    <div>
+      <h1>Garmin × Whoop</h1>
+      <div class="sub" id="date-label"></div>
+    </div>
+  </div>
+  <div>
+    {% if whoop_needs_setup %}
+      <span class="whoop-btn whoop-setup" title="Set WHOOP_CLIENT_ID env var">⚙️ Whoop: needs setup</span>
+    {% elif whoop_connected %}
+      <a href="/whoop/logout" class="whoop-btn whoop-connected">✓ Whoop Connected</a>
+    {% else %}
+      <a href="/whoop/login" class="whoop-btn whoop-connect">Connect Whoop</a>
+    {% endif %}
+  </div>
+</header>
+
+<!-- Side-by-side comparison -->
+<div class="section-label">Today's Comparison</div>
+<div class="compare-grid">
+
+  <!-- Garmin column -->
+  <div class="device-col">
+    <div class="device-header garmin-header">
+      <div class="device-logo garmin-logo">🏃</div>
+      <div>
+        <div class="device-name">Garmin</div>
+        <div class="device-sub">Activity & GPS</div>
+      </div>
+    </div>
+    <div class="stat-card"><div class="stat-icon">👟</div><div><div class="stat-value" id="g-steps">—</div><div class="stat-label">Steps</div></div></div>
+    <div class="stat-card"><div class="stat-icon">📍</div><div><div class="stat-value" id="g-dist">—</div><div class="stat-label">Distance</div></div></div>
+    <div class="stat-card"><div class="stat-icon">🔥</div><div><div class="stat-value" id="g-cal">—</div><div class="stat-label">Calories</div></div></div>
+    <div class="stat-card"><div class="stat-icon">❤️</div><div><div class="stat-value" id="g-hr">—</div><div class="stat-label">Resting HR</div><div class="delta" id="g-hr-delta"></div></div></div>
+    <div class="stat-card"><div class="stat-icon">⏱️</div><div><div class="stat-value" id="g-intensity">—</div><div class="stat-label">Intensity Minutes</div></div></div>
+    <div class="stat-card"><div class="stat-icon">🧘</div><div><div class="stat-value" id="g-stress">—</div><div class="stat-label">Stress</div></div></div>
+  </div>
+
+  <!-- Whoop column -->
+  <div class="device-col">
+    <div class="device-header whoop-header">
+      <div class="device-logo whoop-logo">💚</div>
+      <div>
+        <div class="device-name">Whoop</div>
+        <div class="device-sub">Recovery & HRV</div>
+      </div>
+    </div>
+
+    {% if whoop_connected %}
+    <div class="score-card" id="whoop-recovery-card">
+      <div class="score-ring" id="recovery-ring" style="border-color:#64748b;color:#64748b">—</div>
+      <div class="stat-label">Recovery Score</div>
+    </div>
+    <div class="stat-card"><div class="stat-icon">💓</div><div><div class="stat-value" id="w-hrv">—</div><div class="stat-label">HRV (ms)</div></div></div>
+    <div class="stat-card"><div class="stat-icon">❤️</div><div><div class="stat-value" id="w-hr">—</div><div class="stat-label">Resting HR</div><div class="delta" id="w-hr-delta"></div></div></div>
+    <div class="stat-card"><div class="stat-icon">⚡</div><div><div class="stat-value" id="w-strain">—</div><div class="stat-label">Strain</div></div></div>
+    <div class="stat-card"><div class="stat-icon">🔥</div><div><div class="stat-value" id="w-cal">—</div><div class="stat-label">Calories</div></div></div>
+    <div class="stat-card"><div class="stat-icon">🩸</div><div><div class="stat-value" id="w-spo2">—</div><div class="stat-label">SpO2</div></div></div>
+    {% else %}
+    <div class="placeholder" style="height:400px">
+      {% if whoop_needs_setup %}⚙️ Add WHOOP_CLIENT_ID to enable{% else %}<a href="/whoop/login" style="color:#00c4b4">Connect Whoop →</a>{% endif %}
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+
+<!-- Charts -->
+<div class="section-label">Heart Rate & Sleep</div>
+<div class="charts-row">
+  <div class="chart-card">
+    <h2>Heart Rate — Today (Garmin)</h2>
+    <div class="chart-wrapper"><canvas id="hrChart"></canvas></div>
+  </div>
+  <div class="chart-card">
+    <h2>Garmin Sleep</h2>
+    <div class="chart-wrapper"><canvas id="gSleepChart"></canvas></div>
+  </div>
+  {% if whoop_connected %}
+  <div class="chart-card">
+    <h2>Whoop Sleep</h2>
+    <div class="chart-wrapper"><canvas id="wSleepChart"></canvas></div>
+  </div>
+  {% else %}
+  <div class="chart-card" style="display:flex;align-items:center;justify-content:center">
+    <span style="color:#475569;font-size:.85rem">Connect Whoop for sleep data</span>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Activities -->
+<div class="section-label">Recent Activities</div>
+<div class="activities-card">
+  <h2>Garmin Activities</h2>
+  <div id="activities-list"><div class="loader">Loading...</div></div>
+</div>
+
+<script>
+const TYPE_ICONS = {
+  running:{icon:'🏃',color:'#f97316'},cycling:{icon:'🚴',color:'#3b82f6'},
+  lap_swimming:{icon:'🏊',color:'#06b6d4'},swimming:{icon:'🏊',color:'#06b6d4'},
+  strength_training:{icon:'🏋️',color:'#8b5cf6'},walking:{icon:'🚶',color:'#22c55e'},
+  default:{icon:'🏅',color:'#64748b'},
+};
+function typeStyle(t){return TYPE_ICONS[t]||TYPE_ICONS.default}
+
+document.getElementById('date-label').textContent = new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+
+function scoreColor(v){
+  if(v>=67) return '#22c55e';
+  if(v>=34) return '#f59e0b';
+  return '#ef4444';
+}
+
+// ── Garmin Stats ──
+fetch('/api/garmin/stats').then(r=>r.json()).then(d=>{
+  document.getElementById('g-steps').textContent = d.steps.toLocaleString();
+  document.getElementById('g-dist').textContent = d.distanceKm+' km';
+  document.getElementById('g-cal').textContent = Math.round(d.calories).toLocaleString()+' kcal';
+  document.getElementById('g-hr').textContent = d.restingHR+' bpm';
+  document.getElementById('g-intensity').textContent = d.intensityMinutes+' min';
+  document.getElementById('g-stress').textContent = d.stress;
+});
+
+// ── Whoop Recovery ──
+{% if whoop_connected %}
+fetch('/api/whoop/recovery').then(r=>r.json()).then(d=>{
+  if(!d.connected) return;
+  const score = Math.round(d.recoveryScore);
+  const ring = document.getElementById('recovery-ring');
+  ring.textContent = score+'%';
+  ring.style.borderColor = scoreColor(score);
+  ring.style.color = scoreColor(score);
+  document.getElementById('w-hrv').textContent = Math.round(d.hrv)+' ms';
+  document.getElementById('w-hr').textContent = Math.round(d.restingHR)+' bpm';
+  document.getElementById('w-spo2').textContent = d.spo2 ? d.spo2.toFixed(1)+'%' : '—';
+
+  // HR delta between Garmin and Whoop
+  fetch('/api/garmin/stats').then(r=>r.json()).then(g=>{
+    const diff = Math.round(d.restingHR) - g.restingHR;
+    const sign = diff > 0 ? '+' : '';
+    const cls = diff > 0 ? 'delta-up' : diff < 0 ? 'delta-down' : 'delta-neutral';
+    document.getElementById('g-hr-delta').innerHTML = `<span class="${cls}">Garmin</span>`;
+    document.getElementById('w-hr-delta').innerHTML = `<span class="${cls}">${sign}${diff} vs Garmin</span>`;
+  });
+});
+
+fetch('/api/whoop/strain').then(r=>r.json()).then(d=>{
+  if(!d.connected) return;
+  document.getElementById('w-strain').textContent = d.strain ? d.strain.toFixed(1) : '—';
+  document.getElementById('w-cal').textContent = d.calories ? d.calories.toLocaleString()+' kcal' : '—';
+});
+{% endif %}
+
+// ── Garmin HR Chart ──
+fetch('/api/garmin/heartrate').then(r=>r.json()).then(d=>{
+  const pts = d.points;
+  const step = Math.max(1,Math.floor(pts.length/120));
+  const sampled = pts.filter((_,i)=>i%step===0);
+  new Chart(document.getElementById('hrChart'),{
+    type:'line',
+    data:{
+      labels: sampled.map(p=>new Date(p.time).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})),
+      datasets:[{data:sampled.map(p=>p.bpm),borderColor:'#ef4444',backgroundColor:'rgba(239,68,68,.1)',borderWidth:2,pointRadius:0,fill:true,tension:.4}]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{display:false},y:{grid:{color:'#2a3045'},ticks:{color:'#64748b',font:{size:11}}}}}
+  });
+});
+
+// ── Garmin Sleep Chart ──
+fetch('/api/garmin/sleep').then(r=>r.json()).then(d=>{
+  new Chart(document.getElementById('gSleepChart'),{
+    type:'doughnut',
+    data:{labels:['Deep','Light','REM','Awake'],datasets:[{data:[d.deepSleep,d.lightSleep,d.remSleep,d.awake],backgroundColor:['#3b82f6','#06b6d4','#8b5cf6','#64748b'],borderWidth:0}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'65%',
+      plugins:{legend:{position:'right',labels:{color:'#94a3b8',font:{size:10},boxWidth:10}},
+               tooltip:{callbacks:{label:c=>` ${c.parsed.toFixed(1)}h`}}}}
+  });
+});
+
+// ── Whoop Sleep Chart ──
+{% if whoop_connected %}
+fetch('/api/whoop/sleep').then(r=>r.json()).then(d=>{
+  if(!d.connected) return;
+  new Chart(document.getElementById('wSleepChart'),{
+    type:'doughnut',
+    data:{labels:['Deep','Light','REM','Awake'],datasets:[{data:[d.deepHours,d.lightHours,d.remHours,d.awakeHours],backgroundColor:['#3b82f6','#06b6d4','#8b5cf6','#64748b'],borderWidth:0}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'65%',
+      plugins:{legend:{position:'right',labels:{color:'#94a3b8',font:{size:10},boxWidth:10}},
+               tooltip:{callbacks:{label:c=>` ${c.parsed.toFixed(1)}h`}}}}
+  });
+});
+{% endif %}
+
+// ── Activities ──
+fetch('/api/garmin/activities').then(r=>r.json()).then(list=>{
+  const today = new Date().toDateString();
+  document.getElementById('activities-list').innerHTML = list.map(a=>{
+    const s = typeStyle(a.type);
+    const isToday = new Date(a.start).toDateString()===today;
+    const dateStr = new Date(a.start).toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+    return `<div class="act-row">
+      <div class="act-icon" style="background:${s.color}22">${s.icon}</div>
+      <div>
+        <div class="act-name">${a.name}${isToday?'<span class="today-badge">Today</span>':''}<span class="source-badge garmin-badge">Garmin</span></div>
+        <div class="act-meta">${dateStr} · ${a.durationMin} min${a.avgHR?' · ❤️ '+a.avgHR+' bpm':''}</div>
+      </div>
+      <div class="act-right">
+        <div class="act-dist">${a.distanceKm>0?a.distanceKm+' km':'—'}</div>
+        <div class="act-cal">${a.calories?a.calories+' cal':''}</div>
+      </div>
+    </div>`;
+  }).join('');
+});
+</script>
+</body>
+</html>
